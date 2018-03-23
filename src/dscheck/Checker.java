@@ -5,6 +5,7 @@
  */
 package dscheck;
 
+import java.io.IOException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.forgerock.opendj.ldap.Connection;
@@ -14,6 +15,7 @@ import org.forgerock.opendj.ldap.SearchScope;
 import org.forgerock.opendj.ldap.responses.SearchResultEntry;
 import org.forgerock.opendj.ldap.responses.SearchResultReference;
 import org.forgerock.opendj.ldif.ConnectionEntryReader;
+import org.forgerock.opendj.ldif.LDIFEntryWriter;
 
 /**
  *
@@ -24,7 +26,7 @@ class Checker extends Thread {
     private final int threadid;
     private final Connection dsc;
     private String dsetag = null;
-
+    final LDIFEntryWriter writer = new LDIFEntryWriter(System.out);
 
     Checker(int threadid, Connection dsc) {
         this.threadid = threadid;
@@ -34,33 +36,56 @@ class Checker extends Thread {
     @Override
     public void start() {
     }
-    
+
     public void check(String dsobject, String dsbasedn) {
         boolean validobject = false;
-        final ConnectionEntryReader reader = this.dsc.search(dsbasedn, SearchScope.SINGLE_LEVEL, dsobject , "etag");
+        final ConnectionEntryReader reader = this.dsc.search(dsbasedn, SearchScope.SINGLE_LEVEL, dsobject, "etag");
         try {
             while (reader.hasNext()) {
                 if (reader.isEntry()) {
                     validobject = true;
-                    final SearchResultEntry entry0 = reader.readEntry();
-                    this.dsetag = entry0.getAttribute("etag").firstValueAsString();
+                    final SearchResultEntry entry = reader.readEntry();
+                    this.dsetag = entry.getAttribute("etag").firstValueAsString();
 //                    System.out.println(this.threadid + ": " + dsobject + "," + dsbasedn + " = " + this .dsetag);
                 } else {
-                    // Got a continuation reference.
-                    final SearchResultReference ref = reader.readReference();
-                    System.out.println("Search result reference: " + ref.getURIs().toString());
+                    this.dsetag = "referral-object";
                 }
             }
         } catch (ErrorResultIOException | SearchResultReferenceIOException ex) {
             Logger.getLogger(Checker.class.getName()).log(Level.SEVERE, null, ex);
         }
         if (!validobject) {
-            this.dsetag = "absentobject";
+            this.dsetag = "absent-object";
         }
     }
 
     String getEtag() {
         return (this.dsetag);
+    }
+
+    void show(String dsobject, String dsbasedn) {
+        boolean validobject = false;
+        final ConnectionEntryReader reader = this.dsc.search(dsbasedn, SearchScope.SINGLE_LEVEL, dsobject, "*");
+        try {
+            while (reader.hasNext()) {
+                if (reader.isEntry()) {
+                    validobject = true;
+                    final SearchResultEntry entry = reader.readEntry();
+                    writer.writeEntry(entry);
+                    writer.flush();
+//System.out.println(entry);
+                } else {
+                    System.out.println("Referral Object\n");
+                }
+            }
+        } catch (ErrorResultIOException | SearchResultReferenceIOException ex) {
+            Logger.getLogger(Checker.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (IOException ex) {
+            Logger.getLogger(Checker.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        if (!validobject) {
+            System.out.println("absent-object\n");
+        }
     }
 
 }

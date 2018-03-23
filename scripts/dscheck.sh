@@ -9,7 +9,7 @@ REPBASEDN="cn=replication server,cn=Multimaster Synchronization,cn=Synchronizati
 MONITORBASEDN="cn=monitor"
 BASEDN="ou=People,dc=example,dc=com"
 TMPFILES=$DSCHECKHOME/tmp/
-FULLCHECK=false
+FULLCHECK=true
 
 STARTTIMESTAMP=`date '+%Y%m%d%H%M%S'`
 DSCURRENTTIME=`${DSHOME}bin/ldapsearch \
@@ -45,7 +45,6 @@ if [[ $1 ]]
     MODIFYMINUTE=45
     MODIFYSECOND=32
     MODIFYTIMESTAMP="${MODIFYYEAR}${MODIFYMONTH}${MODIFYDAY}${MODIFYHOUR}${MODIFYMINUTE}${MODIFYSECOND}Z"
-    echo "Time stamp to be used: Create = ${CREATETIMESTAMP} & Modify = ${MODIFYTIMESTAMP}"
 fi
 
 hosts=`${DSHOME}bin/ldapsearch \
@@ -103,8 +102,7 @@ done
 
 echo -n "Searching for objects..."
 wait
-echo "Done searching. Collating and sorting..."
-echo "+++++++++++++++++++++++++++++++++"
+echo "Done searching and now collating and sorting..."
 
 if  [[ ${FULLCHECK} == "true" ]]
   then
@@ -122,6 +120,8 @@ if  [[ ${FULLCHECK} == "true" ]]
   cat ${TMPFILES}full-*.txt | sort | uniq -c | sort | sed -e 's/^[ \t]*//'> ${TMPFILES}checkentries-${DSCURRENTTIME}.txt
   rm ${TMPFILES}full-*.txt
 else
+  echo "Time stamp to be used: Create = ${CREATETIMESTAMP} & Modify = ${MODIFYTIMESTAMP}"
+  echo "--------------------------------"
   for host in ${hosts}
     do
     echo -n "Total created entries after ${CREATETIMESTAMP} in ${host}  = "
@@ -147,8 +147,10 @@ else
 fi
 
 cat ${TMPFILES}checkentries-${DSCURRENTTIME}.txt | cut -d" " -f3 > ${TMPFILES}dns.txt
-echo "Checking object validity..."
-java -jar ${DSCHECKHOME}/dist/DSCheck.jar --instances ${instances} ${TMPFILES}dns.txt
+echo "Done collating and sorting. Checking object validity..."
+echo "+++++++++++++++++++++++++++++++++"
+echo "java -jar ${DSCHECKHOME}/dist/DSCheck.jar --instances ${instances} --verbose --repeat 4 ${TMPFILES}dns.txt"
+java -jar ${DSCHECKHOME}/dist/DSCheck.jar --instances ${instances} --verbose --repeat 4 ${TMPFILES}dns.txt
 echo "End of dscheck"
 echo ""
-${DSCHECKHOME}/scripts/dscheck.sh ${DSCURRENTTIME}
+# ${DSCHECKHOME}/scripts/dscheck.sh ${DSCURRENTTIME}

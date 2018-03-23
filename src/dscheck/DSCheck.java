@@ -30,17 +30,19 @@ public class DSCheck extends Thread {
         String dsobject;
         String dsbasedn;
         String[] instances = null;
-        Boolean validobject = true;
+        boolean validobject = true;
+        boolean verbose = false;
         Long passed = new Long(0);
         Long failed = new Long(0);
-        int oi = 0;
+        int repeatcheck = 1;
+        int sleepcheck = 0;
         String[] cs;
         String host;
         Integer port;
         Connection[] dsc;
         LDAPConnectionFactory[] dscf;
-        if (args.length < 2) {
-            help();
+        if (args.length < 3) {
+            help(repeatcheck);
         } else {
             try {
                 br = new BufferedReader(new FileReader(args[args.length - 1]));
@@ -49,16 +51,25 @@ public class DSCheck extends Thread {
             }
             for (int i = 0; i < (args.length - 1); i++) {
                 switch (args[i]) {
+                    case "-i":
                     case "--instances":
                         instances = args[i + 1].split("~");
-//                        System.out.println(args[args.length - 1] + "--" + instances[0]);
                         break;
+                    case "-r":
+                    case "--repeat":
+                        repeatcheck = Integer.parseInt(args[i + 1]);
+                    case "-s":
+                    case "--sleep":
+                        repeatcheck = Integer.parseInt(args[i + 1]);
+                    case "-v":
+                    case "--verbose":
+                        verbose = true;
                     default:
                         break;
                 }
             }
             if (instances == null) {
-                help();
+                help(repeatcheck);
             } else {
                 try {
                     Checker[] checker = new Checker[instances.length];
@@ -82,31 +93,48 @@ public class DSCheck extends Thread {
                         int x = brdn.indexOf(",");
                         dsobject = brdn.substring(0, x);
                         dsbasedn = brdn.substring((x + 1), brdn.length());
+                        int checkit = 0;
 //                        System.out.println("Thread: " + dsobject + " === " + dsbasedn + " = " + checker[0].getEtag());
-                        for (int i = 0; i < checker.length; i++) {
-                            checker[i].check(dsobject, dsbasedn);
-                        }
-                        for (int i = 0; i < checker.length; i++) {
-                            checker[i].join();
-                            if (i > 0) {
-                                if (checker[i].getEtag().compareTo(checker[i - 1].getEtag()) != 0) {
-                                    validobject = false;
+                        validobject = true;
+                        while (checkit < repeatcheck) {
+                            for (int i = 0; i < checker.length; i++) {
+                                checker[i].check(dsobject, dsbasedn);
+                            }
+                            for (int i = 0; i < checker.length; i++) {
+                                checker[i].join();
+                                if (i > 0) {
+                                    if (checker[i].getEtag().compareTo(checker[i - 1].getEtag()) != 0) {
+                                        validobject = false;
+                                    }
                                 }
                             }
-                        }
-                        if (validobject) {
+                            if (validobject) {
 //                            System.out.println("MATCHED:");
 //                            for (int i = 0; i < checker.length; i++) {
 //                                System.out.println("    Host:port=" + instances[i] + " dn=" + dsobject + "," + dsbasedn + " etag = " + checker[i].getEtag());
 //                            }
+                                checkit = repeatcheck;
+                            } else {
+                                checkit++;
+                                if (checkit == repeatcheck) {
+                                    System.out.println("vvvvvvvvvvvvv OBJECT DN = " + dsobject + "," + dsbasedn + " MISMATCH after " + checkit + " checks vvvvvvvvvvv\n");
+                                    for (int i = 0; i < checker.length; i++) {
+                                        System.out.println("Host:port=" + instances[i] + " etag = " + checker[i].getEtag());
+                                        if (verbose) {
+                                            checker[i].show(dsobject, dsbasedn);
+                                        }
+                                    }
+                                    System.out.println("^^^^^^^^^^^^^ OBJECT DN = " + dsobject + "," + dsbasedn + " MISMATCH ^^^^^^^^^^^^^^^^^^^^^^^^^^\n");
+                                } else {
+//                                    System.out.println("Object mismatch dn = " + dsobject + "," + dsbasedn + " recheck = " + checkit);
+                                    sleep(sleepcheck);
+                                }
+                            }
+                        }
+                        if (validobject) {
                             passed++;
                         } else {
-                            System.out.println("OBJECT MISMATCH:");
-                            for (int i = 0; i < checker.length; i++) {
-                                System.out.println("    Host:port=" + instances[i] + " dn=" + dsobject + "," + dsbasedn + " etag = " + checker[i].getEtag());
-                            }
                             failed++;
-                            validobject = true;
                         }
                     }
                     for (int i = 0; i < dsc.length; i++) {
@@ -116,13 +144,35 @@ public class DSCheck extends Thread {
                 } catch (IOException | InterruptedException ex) {
                     Logger.getLogger(DSCheck.class.getName()).log(Level.SEVERE, null, ex);
                 }
-                System.out.println(passed + " objects that matched; " + failed + " objects failed to match");
+                System.out.println(passed + " objects that matched; " + failed + " objects that failed to match");
             }
         }
     }
 
-    private static void help() {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    private static void help(int repeatcheck) {
+        String help = "\nDSCheck usage:"
+                + "\njava -jar ./dist/DSCheck.jar --instances INSTANCE0:PORT0~INSTANCEn:PORTn /path/to/DNs/file"
+                + "\nrequired:"
+                + "\n\t--instances  | -i in a specific format using a tilde \"~\" to separate instances i.e. ds0.example.com:1389~ds1.example.com:1389~ds2.example.com:1389"
+                + "\n\t/path/to/DNs/file where each line in this file is a single DN"
+                + "\noptions:"
+                //                + "\n\t--quiet    | -q {default = off} minimizes output"
+                + "\n\t--verbose  | -v {default = false} full display of objects that did not match"
+                //                + "\n\t--csv      | -c {default = off} output in a comma delimited format"
+                + "\n\t--repeat n | -r n (default n = " + repeatcheck + "} maximum number of times to check object validity if found not valid across all instances"
+                + "\n\t--sleep t  | -s t {default t = 0} seconds to sleep until repeating validity check"
+                //                + "\n\t--fails /path/to/directory | -f /path/to/directory location to write objects that are deemed to be different for a particular DN"
+                + "\n\t--help     | -h this output\n"
+                + "\nExamples:"
+                //                + "\n\nRun 2 threads of load until stopped:"
+                //                + "\njava -jar ./dist/CPULoader.jar --lapsedtime 20000 --maxthreads 2"
+                //                + "\n\nIncrement thread count until threshold is exceeded:"
+                //                + "\njava -jar ./dist/CPULoader.jar --threshold 5"
+                //                + "\n\nIncrement thread count until threshold is exceeded and start again until stopped with output in csv format:"
+                //                + "\njava -jar ./dist/CPULoader.jar --threshold 5 --forever --csv\n";
+                + "";
+        System.out.println(help);
+        System.out.println("java -jar ${DSCHECKHOME}/dist/DSCheck.jar --instances ${instances} ${TMPFILES}dns.txt");
     }
 
 }
