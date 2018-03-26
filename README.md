@@ -27,9 +27,9 @@ options:
 	--verbose  | -v {default = false} full display of objects that did not match
 	--repeat n | -r n (default n = 1} maximum number of times to check object validity if found not valid across all instances
 	--sleep t  | -s t {default t = 0} seconds to sleep until repeating validity check
-	--help     | -h this output```
+	--help     | -h this output
 
-```Examples:
+Examples:
 java -jar ${DSCHECKHOME}/dist/DSCheck.jar --instances ${instances} ${TMPFILES}dns.txt```
 
 DSCheck can scan all objects in a certain BaseDN or scan only those objects created and modified after a specified time in a certain BaseDN.
