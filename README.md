@@ -18,7 +18,8 @@ Since no environment is failsafe DSCheck provides a way to check and validate da
 
 DSCheck is not a real time utility. From the time DSCheck starts until completion data could change. Depending on the speed in which replication can complete across all instances at certain points in time specific objects may NOT have the exact same data. DSCheck can accommodate this by rechecking unmatched objects based on flags/switches selected.
 
-```DSCheck usage:
+```
+DSCheck usage:
 java -jar ./dist/DSCheck.jar --instances INSTANCE0:PORT0~INSTANCEn:PORTn /path/to/DNs/file
 required:
 	--instances  | -i in a specific format using a tilde "~" to separate instances i.e. ds0.example.com:1389~ds1.example.com:1389~ds2.example.com:1389
@@ -30,6 +31,7 @@ options:
 	--help     | -h this output
 
 Examples:
-java -jar ${DSCHECKHOME}/dist/DSCheck.jar --instances ${instances} ${TMPFILES}dns.txt```
+java -jar ${DSCHECKHOME}/dist/DSCheck.jar --instances ${instances} ${TMPFILES}dns.txt
+```
 
 DSCheck can scan all objects in a certain BaseDN or scan only those objects created and modified after a specified time in a certain BaseDN.
