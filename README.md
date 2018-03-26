@@ -17,8 +17,8 @@ What we do find is that some external event can cause a lack of confidence by th
 Since no environment is failsafe DSCheck provides a way to check and validate data consistency across all replicas. The goal of DSCheck is to help operators gain confidence in the consistency of the data. If object inconsistency/validity is discovered the offending objects will be listed and the data inconsistency rectified by those who are responsible for the data. DSCheck does NOT determine what data is the most correct.
 
 DSCheck is not a real time utility. From the time DSCheck starts until completion data could change. Depending on the speed in which replication can complete across all instances at certain points in time specific objects may NOT have the exact same data. DSCheck can accommodate this by rechecking unmatched objects based on flags/switches selected.
-```
-DSCheck usage:
+
+```DSCheck usage:
 java -jar ./dist/DSCheck.jar --instances INSTANCE0:PORT0~INSTANCEn:PORTn /path/to/DNs/file
 required:
 	--instances  | -i in a specific format using a tilde "~" to separate instances i.e. ds0.example.com:1389~ds1.example.com:1389~ds2.example.com:1389
@@ -27,9 +27,9 @@ options:
 	--verbose  | -v {default = false} full display of objects that did not match
 	--repeat n | -r n (default n = 1} maximum number of times to check object validity if found not valid across all instances
 	--sleep t  | -s t {default t = 0} seconds to sleep until repeating validity check
-	--help     | -h this output
+	--help     | -h this output```
 
-Examples:
-java -jar ${DSCHECKHOME}/dist/DSCheck.jar --instances ${instances} ${TMPFILES}dns.txt
-```
+```Examples:
+java -jar ${DSCHECKHOME}/dist/DSCheck.jar --instances ${instances} ${TMPFILES}dns.txt```
+
 DSCheck can scan all objects in a certain BaseDN or scan only those objects created and modified after a specified time in a certain BaseDN.
