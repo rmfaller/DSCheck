@@ -41,3 +41,22 @@ java -jar ${DSCHECKHOME}/dist/DSCheck.jar --instances ${instances} ${TMPFILES}dn
 ```
 
 DSCheck can scan all objects in a certain BaseDN or scan only those objects created and modified after a specified time in a certain BaseDN.
+
+Possible scenario that could lead to a data discrepancy.
+Three DS instances in fully meshed replication:
+
+```
+ds0---ds1
+ | \ / 
+ |  V 
+ | / 
+ds2
+```
+
+
+
+ds0---ds1
+ | \ / |
+ |  X  |
+ | / \ |
+ds2---ds3
