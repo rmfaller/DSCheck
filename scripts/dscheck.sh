@@ -73,7 +73,7 @@ hosts=`${DSHOME}bin/ldapsearch \
          | cut -d":" -f2 \
          | sed -e 's/^[ \t]*//' \
          | sed 's/[ \t]*$//'`
-instances=`echo ${hosts} | sed -e 's/ /:'"${DSPORT}"'~/'`
+instances=`echo ${hosts} | sed -e 's/ /:'"${DSPORT}"'~/g'`
 instances="${instances}:${DSPORT}"
 echo "Hosts:ports = ${instances}"
 

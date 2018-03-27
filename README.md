@@ -43,7 +43,7 @@ java -jar ${DSCHECKHOME}/dist/DSCheck.jar --instances ${instances} ${TMPFILES}dn
 DSCheck can scan all objects in a certain BaseDN or scan only those objects created and modified after a specified time in a certain BaseDN.
 
 Possible scenario that could lead to a data discrepancy.
-Three DS instances in fully meshed replication:
+Three DS instances in fully meshed replication with purge delay set at the default of 3 days:
 
 ```
 ds0---ds1
@@ -52,11 +52,18 @@ ds0---ds1
  | / 
 ds2
 ```
+At Day 0 an export-ldif of 40,000,000 objects is taken from ds0.
+From Day 0 through Day 4 changes are made across all three instances with purge delay removing all changes on Day 4 that occurred on Day 0.
+On Day 5 ds3 is instantiated but unfortunately the wrong backup - Day 0 - is used instead of the Day 4 backup.
 
-
-
+```
 ds0---ds1
  | \ / |
  |  X  |
  | / \ |
 ds2---ds3
+```
+As a result of using the wrong backup (the Day 0 backup) ds3 has an incorrect data set that replication can NOT rectify. 
+This mistake is not discovered until Day 7 at which point unraveling the correct data from the incorrect data is a challenge.
+Do we see the above scenario happen often? Nope not really. But given the imperfect nature of the human race anything is possible.
+Hence DSCheck. Stuff happens. But known "stuff" is better than unknown "stuff".
