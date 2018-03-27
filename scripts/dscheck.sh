@@ -130,12 +130,10 @@ echo -n "Searching for objects..."
 wait
 # wait for ldapsearch operations to complete
 
-echo "Done searching and now collating and sorting..."
-
 # Process results from ldapsearch operations
 if  [[ ${FULLCHECK} == "true" ]]
   then
-
+  echo "done performing full scan of all objects in ${BASEDN} and now collating and sorting..."
 # check object entry count of each DS instance
   for host in ${hosts}
     do
@@ -158,7 +156,8 @@ if  [[ ${FULLCHECK} == "true" ]]
   rm ${TMPFILES}full-*.txt
 
 else
-  echo "Time stamp to be used: Create = ${CREATETIMESTAMP} & Modify = ${MODIFYTIMESTAMP}"
+  echo "done performing partial scan of all objects in ${BASEDN}."
+  echo "Time stamp to be used: Create = ${CREATETIMESTAMP} & Modify = ${MODIFYTIMESTAMP}. Now collating and sorting..."
   echo "--------------------------------"
   for host in ${hosts}
     do
@@ -200,7 +199,7 @@ cat ${TMPFILES}checkentries-${DSCURRENTTIME}.txt | cut -d" " -f3 > ${TMPFILES}dn
 echo "Done collating and sorting. Checking object validity..."
 echo "+++++++++++++++++++++++++++++++++"
 # echo "java -jar ${DSCHECKHOME}/dist/DSCheck.jar --instances ${instances} --verbose --repeat 4 ${TMPFILES}dns.txt"
-java -jar ${DSCHECKHOME}/dist/DSCheck.jar --instances ${instances} --verbose --repeat 4 ${TMPFILES}dns.txt
+java -jar ${DSCHECKHOME}/dist/DSCheck.jar --instances ${instances} ${TMPFILES}dns.txt
 echo "End of dscheck"
 echo ""
 # ${DSCHECKHOME}/scripts/dscheck.sh ${DSCURRENTTIME}

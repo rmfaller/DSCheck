@@ -124,6 +124,9 @@ public class DSCheck extends Thread {
                                             checker[i].show(dsobject, dsbasedn);
                                         }
                                     }
+                                    if (!verbose) {
+                                        System.out.println("");
+                                    }
                                     System.out.println("^^^^^^^^^^^^^ OBJECT DN = " + dsobject + "," + dsbasedn + " MISMATCH ^^^^^^^^^^^^^^^^^^^^^^^^^^\n");
                                 } else {
 //                                    System.out.println("Object mismatch dn = " + dsobject + "," + dsbasedn + " recheck = " + checkit);
