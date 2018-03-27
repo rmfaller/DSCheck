@@ -11,7 +11,7 @@ DSPORT=1389
 DSID="cn=Directory Manager"
 DSPASSWORD="password"
 
-# Using the instance specified above use this following to discover instances listed in the replication topology
+# Using the instance specified above use the following to discover instances listed in the replication topology
 REPBASEDN="cn=replication server,cn=Multimaster Synchronization,cn=Synchronization Providers,cn=config"
 MONITORBASEDN="cn=monitor"
 BASEDN="ou=People,dc=example,dc=com"
@@ -77,7 +77,8 @@ instances=`echo ${hosts} | sed -e 's/ /:'"${DSPORT}"'~/'`
 instances="${instances}:${DSPORT}"
 echo "Hosts:ports = ${instances}"
 
-# NOTE: the following ldapsearch operations can have a significant impact on both the system running DSCheck as well as in the systems hosting the target DS instances
+# NOTE: the following ldapsearch operations can have a significant impact on both the system running DSCheck 
+#       as well as in the systems hosting the target DS instances
 
 for host in ${hosts}
   do
@@ -93,7 +94,7 @@ for host in ${hosts}
     | cut -d":" -f2 | sort
 
 # Run full scan of all objects in the baseDn; the ldapsearch is run as a background process
-# one background process per instance is created
+# one background process per DS instance is created
   if [[ ${FULLCHECK} == "true" ]]
     then
     ${DSHOME}bin/ldapsearch \
@@ -107,7 +108,7 @@ for host in ${hosts}
   else
 
 # if not a full scan then perform background ldapsearch based on creation time and modification time
-# two background processes per instance are created
+# two background processes per DS instance are created
       ${DSHOME}bin/ldapsearch \
       --hostname "${host}" \
       --port "${DSPORT}" \
@@ -133,7 +134,7 @@ wait
 # Process results from ldapsearch operations
 if  [[ ${FULLCHECK} == "true" ]]
   then
-  echo "done performing full scan of all objects in ${BASEDN} and now collating and sorting..."
+  echo "done performing full scan of all objects in ${BASEDN}. Now collating and sorting..."
 # check object entry count of each DS instance
   for host in ${hosts}
     do
@@ -180,7 +181,7 @@ else
   echo "--------------------------------"
   done
 
-# collect all the DNs from each host that were created and/or modified on or after the specified date into a single sorted file
+# collect all the DNs from each host that were created and/or modified on or after the specified time stamp into a single sorted file
 # check for uniqueness of each DN counting the number of recurrences which should match the number of DS instances 
 # use the head and tail command to verify there are no discrepancies in object count
   cat ${TMPFILES}modify-*.txt ${TMPFILES}create-*.txt | sort | uniq -c | sort | sed -e 's/^[ \t]*//'> ${TMPFILES}checkentries-${DSCURRENTTIME}.txt
