@@ -192,6 +192,17 @@ fi
 
 # strip off the unique entry count value
 cat ${TMPFILES}checkentries-${DSCURRENTTIME}.txt | cut -d" " -f3 > ${TMPFILES}dns.txt
+cd ${TMPFILES}
+split --number=l/10 --additional-suffix -dns.lst dns.txt
+dnsfiles=`ls x*-dns.lst`
+for dnsfile in ${dnsfiles}
+  do
+  java -jar ${DSCHECKHOME}/dist/DSCheck.jar --instances ${instances} ${TMPFILES}${dnsfile} > ${TMPFILES}${dnsfile}.out &
+done
+wait
+cat ${TMPFILES}*.out > ${TMPFILES}results-${DSCURRENTTIME}.txt
+rm ${TMPFILES}x*-dns.lst
+rm ${TMPFILES}x*-dns.lst.out
 
 # retain the checkentries files for historical purposes if desired
 # if not then uncomment the following command
@@ -200,7 +211,7 @@ cat ${TMPFILES}checkentries-${DSCURRENTTIME}.txt | cut -d" " -f3 > ${TMPFILES}dn
 echo "Done collating and sorting. Checking object validity..."
 echo "+++++++++++++++++++++++++++++++++"
 # echo "java -jar ${DSCHECKHOME}/dist/DSCheck.jar --instances ${instances} --verbose --repeat 4 ${TMPFILES}dns.txt"
-java -jar ${DSCHECKHOME}/dist/DSCheck.jar --instances ${instances} ${TMPFILES}dns.txt
+# java -jar ${DSCHECKHOME}/dist/DSCheck.jar --instances ${instances} ${TMPFILES}dns.txt
 echo "End of dscheck"
 echo ""
 # ${DSCHECKHOME}/scripts/dscheck.sh ${DSCURRENTTIME}
