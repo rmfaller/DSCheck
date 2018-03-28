@@ -19,9 +19,6 @@ BASEDN="ou=People,dc=example,dc=com"
 # location to place output 
 TMPFILES=$DSCHECKHOME/tmp/
 
-# whether to run a full check against all objects; options are - true - or - false
-FULLCHECK=true
-
 STARTTIMESTAMP=`date '+%Y%m%d%H%M%S'`
 
 # set current time based on DS instance(s) NOT of the current time of the system running DSCheck
@@ -38,12 +35,18 @@ DSCURRENTTIME=`${DSHOME}bin/ldapsearch \
 
 # if a timestamp is included in the execution of this script then use that time stamp
 # if not included then use the time stamp(s) as specified in this script
-if [[ $1 ]]
+if [[ ${1} ]]
   then
-    echo "Time to be used = ${1}"
-    CREATETIMESTAMP="${1}"
-    MODIFYTIMESTAMP="${1}"
-    echo "Time stamp to be used: Create = ${CREATETIMESTAMP} & Modify = ${MODIFYTIMESTAMP}"
+    if [[ ${1} == "full" ]]
+      then
+# run a full check against all objects
+      FULLCHECK=true
+    else
+      echo "Time to be used = ${1}"
+      CREATETIMESTAMP="${1}"
+      MODIFYTIMESTAMP="${1}"
+      echo "Time stamp to be used: Create = ${CREATETIMESTAMP} & Modify = ${MODIFYTIMESTAMP}"
+    fi
   else
     CREATEYEAR=2018
     CREATEMONTH=03
