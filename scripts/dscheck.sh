@@ -212,7 +212,12 @@ else
   dnsfiles=`ls x*`
   for dnsfile in ${dnsfiles}
     do
-    java -jar ${DSCHECKHOME}/dist/DSCheck.jar --instances ${instances} ${TMPFILES}${dnsfile} > ${TMPFILES}${dnsfile}.out &
+    if  [[ ${FULLCHECK} == "true" ]]
+      then
+      java -jar ${DSCHECKHOME}/dist/DSCheck.jar --instances ${instances} ${TMPFILES}${dnsfile} > ${TMPFILES}${dnsfile}.out &
+    else
+      java -jar ${DSCHECKHOME}/dist/DSCheck.jar --verbose --repeat 2 --sleep 1 --instances ${instances} ${TMPFILES}${dnsfile} > ${TMPFILES}${dnsfile}.out &
+    fi
   done
   wait
   cat ${TMPFILES}x*.out > ${TMPFILES}results-${DSCURRENTTIME}.txt
@@ -227,8 +232,6 @@ echo "Done collating and sorting. Checking object validity..."
 ENDTIMESTAMP=`date '+%Y%m%d%H%M%S'`
 echo "Started on ${STARTTIMESTAMP}; Completed on ${ENDTIMESTAMP}" 
 echo "+++++++++++++++++++++++++++++++++"
-# echo "java -jar ${DSCHECKHOME}/dist/DSCheck.jar --instances ${instances} --verbose --repeat 4 ${TMPFILES}dns.txt"
-# java -jar ${DSCHECKHOME}/dist/DSCheck.jar --instances ${instances} ${TMPFILES}dns.txt
 echo "End of dscheck"
 echo ""
 ${DSCHECKHOME}/scripts/dscheck.sh ${DSCURRENTTIME}
