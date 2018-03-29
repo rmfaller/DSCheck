@@ -38,6 +38,7 @@ public class DSCheck extends Thread {
         int sleepcheck = 0;
         String[] cs;
         String host;
+        String filename = null;
         Integer port;
         Connection[] dsc;
         LDAPConnectionFactory[] dscf;
@@ -45,7 +46,8 @@ public class DSCheck extends Thread {
             help(repeatcheck);
         } else {
             try {
-                br = new BufferedReader(new FileReader(args[args.length - 1]));
+                filename = new String(args[args.length - 1]);
+                br = new BufferedReader(new FileReader(filename));
             } catch (FileNotFoundException ex) {
                 Logger.getLogger(DSCheck.class.getName()).log(Level.SEVERE, null, ex);
             }
@@ -109,10 +111,12 @@ public class DSCheck extends Thread {
                                 }
                             }
                             if (validobject) {
-//                            System.out.println("MATCHED:");
-//                            for (int i = 0; i < checker.length; i++) {
-//                                System.out.println("    Host:port=" + instances[i] + " dn=" + dsobject + "," + dsbasedn + " etag = " + checker[i].getEtag());
-//                            }
+                                if (verbose) {
+                                    System.out.println("MATCHED:");
+                                    for (int i = 0; i < checker.length; i++) {
+                                        System.out.println("    Host:port=" + instances[i] + " dn=" + dsobject + "," + dsbasedn + " etag = " + checker[i].getEtag());
+                                    }
+                                }
                                 checkit = repeatcheck;
                             } else {
                                 checkit++;
@@ -147,7 +151,10 @@ public class DSCheck extends Thread {
                 } catch (IOException | InterruptedException ex) {
                     Logger.getLogger(DSCheck.class.getName()).log(Level.SEVERE, null, ex);
                 }
-                System.out.println(passed + " objects that matched; " + failed + " objects that failed to match");
+                System.out.println("Processing DNs in " + filename + " results in " + passed + " objects that matched; " + failed + " objects that failed to match");
+                if (verbose) {
+                    System.out.println("");
+                }
             }
         }
     }

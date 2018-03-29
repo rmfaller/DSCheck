@@ -19,6 +19,9 @@ BASEDN="ou=People,dc=example,dc=com"
 # location to place output 
 TMPFILES=$DSCHECKHOME/tmp/
 
+# number of DSCheck instances to rum simultaneously
+THREADS=4
+
 STARTTIMESTAMP=`date '+%Y%m%d%H%M%S'`
 
 # set current time based on DS instance(s) NOT of the current time of the system running DSCheck
@@ -45,6 +48,7 @@ if [[ ${1} ]]
       echo "Time to be used = ${1}"
       CREATETIMESTAMP="${1}"
       MODIFYTIMESTAMP="${1}"
+      FULLCHECK=false
       echo "Time stamp to be used: Create = ${CREATETIMESTAMP} & Modify = ${MODIFYTIMESTAMP}"
     fi
   else
@@ -195,26 +199,36 @@ fi
 
 # strip off the unique entry count value
 cat ${TMPFILES}checkentries-${DSCURRENTTIME}.txt | cut -d" " -f3 > ${TMPFILES}dns.txt
-cd ${TMPFILES}
-split --number=l/10 --additional-suffix -dns.lst dns.txt
-dnsfiles=`ls x*-dns.lst`
-for dnsfile in ${dnsfiles}
-  do
-  java -jar ${DSCHECKHOME}/dist/DSCheck.jar --instances ${instances} ${TMPFILES}${dnsfile} > ${TMPFILES}${dnsfile}.out &
-done
-wait
-cat ${TMPFILES}*.out > ${TMPFILES}results-${DSCURRENTTIME}.txt
-rm ${TMPFILES}x*-dns.lst
-rm ${TMPFILES}x*-dns.lst.out
+totaldns=`wc -l ${TMPFILES}dns.txt | tr -s " " "~" | cut -f1 -d"~"`
+
+if [[ ($totaldns < 1) ]]
+  then
+  echo "There are no objects to check."
+else
+  splitcount=$(( totaldns/THREADS ))
+  cd ${TMPFILES}
+# split --number=l/10 --additional-suffix -dns.lst dns.txt
+  split -l ${splitcount} dns.txt
+  dnsfiles=`ls x*`
+  for dnsfile in ${dnsfiles}
+    do
+    java -jar ${DSCHECKHOME}/dist/DSCheck.jar --instances ${instances} ${TMPFILES}${dnsfile} > ${TMPFILES}${dnsfile}.out &
+  done
+  wait
+  cat ${TMPFILES}x*.out > ${TMPFILES}results-${DSCURRENTTIME}.txt
+  rm ${TMPFILES}x*
+fi
 
 # retain the checkentries files for historical purposes if desired
 # if not then uncomment the following command
 # rm ${TMPFILES}checkentries-${DSCURRENTTIME}.txt 
 
 echo "Done collating and sorting. Checking object validity..."
+ENDTIMESTAMP=`date '+%Y%m%d%H%M%S'`
+echo "Started on ${STARTTIMESTAMP}; Completed on ${ENDTIMESTAMP}" 
 echo "+++++++++++++++++++++++++++++++++"
 # echo "java -jar ${DSCHECKHOME}/dist/DSCheck.jar --instances ${instances} --verbose --repeat 4 ${TMPFILES}dns.txt"
 # java -jar ${DSCHECKHOME}/dist/DSCheck.jar --instances ${instances} ${TMPFILES}dns.txt
 echo "End of dscheck"
 echo ""
-# ${DSCHECKHOME}/scripts/dscheck.sh ${DSCURRENTTIME}
+${DSCHECKHOME}/scripts/dscheck.sh ${DSCURRENTTIME}
