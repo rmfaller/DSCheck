@@ -1,60 +1,32 @@
 #!/bin/bash
 # location of DS binaries such as ldapsearch
-DSHOME=/Volumes/twoTBdrive/zips/opendj
+DSHOME=/Volumes/twoTBdrive/zips/opendj/
 
 # location of the DSCheck /dist folder|directory
 DSCHECKHOME=$HOME/projects/DSCheck
 
 # One of the DS instances that is part of the replication topology
-# If there are more than one replication topology best to make copies of
-# this script per replication topology
 DSHOST=ds1.example.com
 DSPORT=1389
 DSID="cn=Directory Manager"
-DSPASSWORD=""
-DSPASSWORDFILE="${DSCHECKHOME}/password.txt"
-
-if [[ -n ${DSPASSWORDFILE} ]]
-  then
-    if [[ -e ${DSPASSWORDFILE} ]]
-      then
-      DSPASSWORD=`head -1 ${DSPASSWORDFILE}`
-    else
-      echo "Password file ${DSPASSWORDFILE} does not exist"
-      echo -n "Enter ${DSID} password: "
-      read -s DSPASSWORD
-    fi
-else
-  if [[ -z ${DSPASSWORD} ]]
-    then
-    echo -n "Enter ${DSID} password: "
-    read -s DSPASSWORD
-    echo "Processing..."
-  fi
-fi
+DSPASSWORD="password"
+DSPASSWORDFILE=""
 
 # Using the instance specified above use the following to discover instances listed in the replication topology
 REPBASEDN="cn=replication server,cn=Multimaster Synchronization,cn=Synchronization Providers,cn=config"
 MONITORBASEDN="cn=monitor"
-
-# Base DN for compare objects
-# As is the case with more than one replication topology it is advised that a copies of
-# this script be made per base DN. For example:
-#   o dscheck-people.sh 
-#   o dscheck-devices.sh
-# and make the needed changes per objects that need to be checked
 BASEDN="ou=People,dc=example,dc=com"
 
 # location to place output 
-TMPFILES=$DSCHECKHOME/tmp
+TMPFILES=$DSCHECKHOME/tmp/
 
-# number of DSCheck threads to run simultaneously
+# number of DSCheck instances to rum simultaneously
 THREADS=4
 
 STARTTIMESTAMP=`date '+%Y%m%d%H%M%S'`
 
 # set current time based on DS instance(s) NOT of the current time of the system running DSCheck
-DSCURRENTTIME=`${DSHOME}/bin/ldapsearch \
+DSCURRENTTIME=`${DSHOME}bin/ldapsearch \
               --hostname "${DSHOST}" \
               --port "${DSPORT}" \
               --bindDn "${DSID}" \
@@ -67,20 +39,20 @@ DSCURRENTTIME=`${DSHOME}/bin/ldapsearch \
 
 # if a timestamp is included in the execution of this script then use that time stamp
 # if not included then use the time stamp(s) as specified in this script
-if [[ ${1} ]] 
+if [[ ${1} ]]
   then
-  if [[ ${1} == "full" ]] 
-    then
+    if [[ ${1} == "full" ]]
+      then
 # run a full check against all objects
-    FULLCHECK=true
-  else 
-    echo "Time to be used = ${1}"
-    CREATETIMESTAMP="${1}"
-    MODIFYTIMESTAMP="${1}"
-    FULLCHECK=false
-    echo "Time stamp to be used: Create = ${CREATETIMESTAMP} & Modify = ${MODIFYTIMESTAMP}"
-  fi 
-  else 
+      FULLCHECK=true
+    else
+      echo "Time to be used = ${1}"
+      CREATETIMESTAMP="${1}"
+      MODIFYTIMESTAMP="${1}"
+      FULLCHECK=false
+      echo "Time stamp to be used: Create = ${CREATETIMESTAMP} & Modify = ${MODIFYTIMESTAMP}"
+    fi
+  else
     CREATEYEAR=2018
     CREATEMONTH=03
     CREATEDAY=16
@@ -96,10 +68,10 @@ if [[ ${1} ]]
     MODIFYMINUTE=45
     MODIFYSECOND=32
     MODIFYTIMESTAMP="${MODIFYYEAR}${MODIFYMONTH}${MODIFYDAY}${MODIFYHOUR}${MODIFYMINUTE}${MODIFYSECOND}Z"
-fi 
+fi
 
 # for each instance gathered from instance specified above check that these instances share the same replication topology information
-hosts=`${DSHOME}/bin/ldapsearch \
+hosts=`${DSHOME}bin/ldapsearch \
        --hostname "${DSHOST}" \
        --port "${DSPORT}" \
        --bindDn "${DSID}" \
@@ -120,7 +92,7 @@ for host in ${hosts}
   do
 # list out each instance replication topology
   echo "Replication hosts shown in ${host}:"
-  ${DSHOME}/bin/ldapsearch \
+  ${DSHOME}bin/ldapsearch \
     --hostname "${host}" \
     --port "${DSPORT}" \
     --bindDn "${DSID}" \
@@ -133,120 +105,138 @@ for host in ${hosts}
 # one background process per DS instance is created
   if [[ ${FULLCHECK} == "true" ]]
     then
-    ${DSHOME}/bin/ldapsearch \
+    ${DSHOME}bin/ldapsearch \
       --hostname "${host}" \
       --port "${DSPORT}" \
       --bindDn "${DSID}" \
       --bindPassword "${DSPASSWORD}" \
       --baseDn "${BASEDN}" "(objectclass=*)" 1.1 \
-      | grep ^dn > ${TMPFILES}/full-${host}.txt &
+      | grep ^dn > ${TMPFILES}full-${host}.txt &
 
   else
 
 # if not a full scan then perform background ldapsearch based on creation time and modification time
 # two background processes per DS instance are created
-      ${DSHOME}/bin/ldapsearch \
+      ${DSHOME}bin/ldapsearch \
       --hostname "${host}" \
       --port "${DSPORT}" \
       --bindDn "${DSID}" \
       --bindPassword "${DSPASSWORD}" \
       --baseDn "${BASEDN}" "(createTimestamp>=${CREATETIMESTAMP})" 1.1 \
-      | grep ^dn > ${TMPFILES}/create-${host}.txt &
+      | grep ^dn > ${TMPFILES}create-${host}.txt &
 
-    ${DSHOME}/bin/ldapsearch \
+    ${DSHOME}bin/ldapsearch \
       --hostname "${host}" \
       --port "${DSPORT}" \
       --bindDn "${DSID}" \
       --bindPassword "${DSPASSWORD}" \
       --baseDn "${BASEDN}" "(modifyTimestamp>=${MODIFYTIMESTAMP})" 1.1 \
-      | grep ^dn > ${TMPFILES}/modify-${host}.txt &
+      | grep ^dn > ${TMPFILES}modify-${host}.txt &
   fi
 done
+
 echo -n "Searching for objects..."
-# wait for ldapsearch operations to complete
 wait
+# wait for ldapsearch operations to complete
 
 # Process results from ldapsearch operations
 if  [[ ${FULLCHECK} == "true" ]]
   then
-  echo "done performing full scan of all objects in ${BASEDN}."
-  echo "Now collating and sorting..."
+  echo "done performing full scan of all objects in ${BASEDN}. Now collating and sorting..."
 # check object entry count of each DS instance
   for host in ${hosts}
     do
     echo -n "Total entries in ${host}  = "
-    if [[ -e "${TMPFILES}/full-${host}.txt" ]]
+    if [[ -e "${TMPFILES}full-${host}.txt" ]]
       then
-      wc -l ${TMPFILES}/full-${host}.txt 
+      wc -l ${TMPFILES}full-${host}.txt 
     else
       echo "0"
-      echo -n > ${TMPFILES}/full-${host}.txt
+      echo -n > ${TMPFILES}full-${host}.txt
     fi
   done
+
 # collect all the DNs from each host into a single sorted file
 # check for uniqueness of each DN counting the number of recurrences which should match the number of DS instances 
 # use the head and tail command to verify there are no discrepancies in object count
-#  cat ${TMPFILES}/full-*.txt | sort | uniq -c | sort | sed -e 's/^[ \t]*//'> ${TMPFILES}/checkentries-${DSCURRENTTIME}.txt
-  cat ${TMPFILES}/full-*.txt | sort | uniq -c | sed -e 's/^[ \t]*//'> ${TMPFILES}/checkentries-${DSCURRENTTIME}.txt
+#  cat ${TMPFILES}full-*.txt | sort | uniq -c | sort | sed -e 's/^[ \t]*//'> ${TMPFILES}checkentries-${DSCURRENTTIME}.txt
+  cat ${TMPFILES}full-*.txt | sort | uniq -c | sed -e 's/^[ \t]*//'> ${TMPFILES}checkentries-${DSCURRENTTIME}.txt
+
 # clean up temporary files
-  rm ${TMPFILES}/full-*.txt
+  rm ${TMPFILES}full-*.txt
+
 else
   echo "done performing partial scan of all objects in ${BASEDN}."
-  echo "Time stamp to be used: Create = ${CREATETIMESTAMP} & Modify = ${MODIFYTIMESTAMP}."
-  echo "Now collating and sorting..."
+  echo "Time stamp to be used: Create = ${CREATETIMESTAMP} & Modify = ${MODIFYTIMESTAMP}. Now collating and sorting..."
   echo "--------------------------------"
   for host in ${hosts}
     do
-    echo "Created entries after ${CREATETIMESTAMP} in ${host}:"
-    if [[ -e "${TMPFILES}/create-${host}.txt" ]]
+    echo -n "Total created entries after ${CREATETIMESTAMP} in ${host}  = "
+    if [[ -e "${TMPFILES}create-${host}.txt" ]]
       then
-      wc -l ${TMPFILES}/create-${host}.txt 
+      wc -l ${TMPFILES}create-${host}.txt 
     else
       echo "0"
-      echo -n > ${TMPFILES}/create-${host}.txt
+      echo -n > ${TMPFILES}create-${host}.txt
     fi
-    echo "Modified entries after ${MODIFYTIMESTAMP} in ${host}:"
-    if [[ -e "${TMPFILES}/modify-${host}.txt" ]]
+    echo -n "Total modified entries after ${MODIFYTIMESTAMP} in ${host} = "
+    if [[ -e "${TMPFILES}modify-${host}.txt" ]]
       then
-      wc -l ${TMPFILES}/modify-${host}.txt 
+      wc -l ${TMPFILES}modify-${host}.txt 
     else
       echo "0"
-      echo -n > ${TMPFILES}/modify-${host}.txt
+      echo -n > ${TMPFILES}modify-${host}.txt
     fi
   echo "--------------------------------"
   done
+
 # collect all the DNs from each host that were created and/or modified on or after the specified time stamp into a single sorted file
 # check for uniqueness of each DN counting the number of recurrences which should match the number of DS instances 
 # use the head and tail command to verify there are no discrepancies in object count
-  cat ${TMPFILES}/modify-*.txt ${TMPFILES}/create-*.txt | sort | uniq -c | sort | sed -e 's/^[ \t]*//'> ${TMPFILES}/checkentries-${DSCURRENTTIME}.txt
+#  cat ${TMPFILES}modify-*.txt ${TMPFILES}create-*.txt | sort | uniq -c | sort | sed -e 's/^[ \t]*//'> ${TMPFILES}checkentries-${DSCURRENTTIME}.txt
+  cat ${TMPFILES}modify-*.txt ${TMPFILES}create-*.txt | sort | uniq -c | sed -e 's/^[ \t]*//'> ${TMPFILES}checkentries-${DSCURRENTTIME}.txt
+
 #clean up temporary files
-  rm ${TMPFILES}/modify-*.txt ${TMPFILES}/create-*.txt
+  rm ${TMPFILES}modify-*.txt ${TMPFILES}create-*.txt
 fi
 
 # strip off the unique entry count value
-cat ${TMPFILES}/checkentries-${DSCURRENTTIME}.txt | cut -d" " -f3 > ${TMPFILES}/dns.txt
-totaldns=`wc -l ${TMPFILES}/dns.txt | sed -e 's/^[ \t]*//' | cut -d" " -f1`
-echo "Done collating and sorting."
+cat ${TMPFILES}checkentries-${DSCURRENTTIME}.txt | cut -d" " -f3 > ${TMPFILES}dns.txt
+totaldns=`wc -l ${TMPFILES}dns.txt | sed -e 's/^[ \t]*//' | cut -d" " -f1`
+
 if [[ ($totaldns < 1) ]]
   then
   echo "There are no objects to check."
 else
-  if  [[ ${FULLCHECK} == "true" ]]
-    then
-    echo "Checking all objects..."
-    java -jar ${DSCHECKHOME}/dist/DSCheck.jar --bindDn "${DSID}" --bindPassword "${DSPASSWORD}" --threads ${THREADS} --verbose --repeat 2 --sleep 1 --instances ${instances} ${TMPFILES}/dns.txt
-  else
-    echo "Checking objects that meet criteria..."
-    java -jar ${DSCHECKHOME}/dist/DSCheck.jar --bindDn "${DSID}" --bindPassword "${DSPASSWORD}" --threads ${THREADS} --verbose --repeat 4 --sleep 4 --instances ${instances} ${TMPFILES}/dns.txt
-  fi
+#  splitcount=$(( totaldns/THREADS ))
+#  cd ${TMPFILES}
+# split --number=l/10 --additional-suffix -dns.lst dns.txt
+#  split -l ${splitcount} dns.txt
+#  dnsfiles=`ls dns.txt`
+#  for dnsfile in ${dnsfiles}
+#    do
+    if  [[ ${FULLCHECK} == "true" ]]
+      then
+#      java -jar ${DSCHECKHOME}/dist/DSCheck.jar --bindDn "${DSID}" --bindPassword "${DSPASSWORD}" --jobs 6 --instances ${instances} ${TMPFILES}dns.txt > ${TMPFILES}rmf.out &
+      java -jar ${DSCHECKHOME}/dist/DSCheck.jar --bindDn "${DSID}" --bindPassword "${DSPASSWORD}" --jobs 16 --verbose --instances ${instances} ${TMPFILES}dns.txt
+    else
+      java -jar ${DSCHECKHOME}/dist/DSCheck.jar --bindDn "${DSID}" --bindPassword "${DSPASSWORD}" --verbose --repeat 2 --sleep 1 --instances ${instances} ${TMPFILES}${dnsfile} > ${TMPFILES}${dnsfile}.out &
+    fi
+#  done
+  wait
+#  cat ${TMPFILES}*.out > ${TMPFILES}full-results-${DSCURRENTTIME}.txt
+#  cat ${TMPFILES}full-results-${DSCURRENTTIME}.txt | grep -v Processing
+#  cat ${TMPFILES}full-results-${DSCURRENTTIME}.txt | grep Processing
+#  rm ${TMPFILES}x*
 fi
 
 # retain the checkentries files for historical purposes if desired
 # if not then uncomment the following command
 # rm ${TMPFILES}checkentries-${DSCURRENTTIME}.txt 
 
+echo "Done collating and sorting. Checking object validity..."
 ENDTIMESTAMP=`date '+%Y%m%d%H%M%S'`
-# echo "Started on ${STARTTIMESTAMP}; Completed on ${ENDTIMESTAMP}" 
+echo "Started on ${STARTTIMESTAMP}; Completed on ${ENDTIMESTAMP}" 
 echo "+++++++++++++++++++++++++++++++++"
 echo "End of dscheck"
 echo ""
