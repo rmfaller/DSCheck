@@ -1,11 +1,21 @@
 # DSCheck
-Utility to check entries on all Directory Service (DS) instances in a replicated DS environment to valid that all the entries of a particular Distinguished Name (DN) match using the object's `etag` value. For example DSCheck validates that `uid=user.1234,ou=people,dc=example,dc=com` has the same etag value on every replicated DS instance of that particular object.
+> The code is provided on an "as is" basis, without warranty of any kind, to the fullest extent permitted by law. 
+> 
+> ForgeRock does not warrant or guarantee the individual success developers may have in implementing the code on their platforms or in production configurations.
+> 
+> ForgeRock does not warrant, guarantee or make any representations regarding the use, results of use, accuracy, timeliness or completeness of any data or information relating to the alpha release of unsupported code. ForgeRock disclaims all warranties, expressed or implied, and in particular, disclaims all warranties of merchantability, and warranties related to the code, or any service or software related thereto.
+> 
+> ForgeRock shall not be liable for any direct, indirect or consequential damages or costs of any type arising out of any action taken by you or others related to the code.
+
+DSCheck is a utility to check entries on all Directory Service (DS) instances in a replicated DS environment. DSCheck validates that all of the entries of a particular Distinguished Name (DN) match using the object's `etag` value. For example DSCheck validates that `uid=user.1234,ou=people,dc=example,dc=com` has the same etag value on every replicated DS instance that persists that object.
 
 Why is DSCheck necessary? From a Directory Server standpoint and the reliability of replication it is not. Directory Server replication is a long established mechanism that works.
 
 Replication can generally recover from conflicts and transient issues. Replication does, however, require that update operations be copied from server to server. It is possible to experience temporary delays while replicas converge, especially when the write operation load is heavy. DS's tolerance for temporary divergence between replicas is what allows DS to remain available to serve client applications even when networks linking the replicas go down.
 
-In other words, the fact that directory services are loosely convergent rather than transactional is a feature.
+In other words, the fact that directory services are loosely convergent rather than transactional is a feature. 
+
+For more information on DS replication please see: [https://backstage.forgerock.com/docs/ds/5.5/admin-guide/#about-replication]()
 
 What we do find is that some external event can cause a lack of confidence for the Directory Server operators in the consistency of the data persisted by Directory Server. Some of these external events can include:
 
@@ -14,13 +24,13 @@ What we do find is that some external event can cause a lack of confidence for t
 * Instance(s) returned to a replication topology but with a different hostname
 * Instance(s) off-line beyond the purge delay setting [https://backstage.forgerock.com/docs/ds/5.5/admin-guide/#troubleshoot-repl]()
 
-Since no environment is failsafe DSCheck provides a way to check and validate data consistency across all replicas. The goal of DSCheck is to help operators gain confidence in the consistency of the data. If object inconsistency is discovered the offending objects will be listed and the data inconsistency rectified by those who are responsible for the data. DSCheck does NOT determine what data is the most correct.
+Since no environment is failsafe DSCheck provides a way to check and validate data consistency across all replicas. The goal of DSCheck is to help operators gain confidence in the consistency of the data. If object inconsistency is discovered the offending objects will be listed and the data inconsistency rectified by those who are responsible for the data. *DSCheck does NOT determine what data is the most correct*.
 
 DSCheck is not a real time utility. From the time DSCheck starts until completion data could change. Depending on the speed in which replication can complete across all instances at certain points in time specific objects may NOT have the exact same data. DSCheck can accommodate this by rechecking unmatched objects based on flags/switches selected.
 
-Running DSCheck is best done using ./scripts/dscheck.sh that enables the setting of environmental parameters. The script also extracts and processes a list of DNs from each instance in the replication topology.
+Running DSCheck is best done using `./scripts/dscheck.sh` that enables the setting of environmental parameters. The script also extracts and processes a list of DNs from each instance in the replication topology.
 
-Once the preprocessing is complete the actual examining of the each object by checking the etag value is done by ./dist/DSCheck.jar. 
+Once the preprocessing is complete the actual examining of the each object by checking the etag value is done by `java -jar ./dist/DSCheck.jar`. 
 
 Running DSCheck can place load on the system running the DSCheck as well as the target DS instances. The ldapsearch commands used allow multiple, simultaneous threads of execution. DO NOT run DSCheck against a production environment unless you fully understand the potential load impact. Off-hours are recommended.
 
@@ -45,7 +55,8 @@ java -jar ${DSCHECKHOME}/dist/DSCheck.jar --bindDn "cn=Directory Manager" --bind
 
 DSCheck can scan all objects in a certain BaseDN or scan only those objects created and modified after a specified time in a certain BaseDN.
 
-Possible scenario that could lead to a data discrepancy.
+The following is a possible scenario that could lead to a data discrepancy:
+
 Three DS instances in fully meshed replication with purge delay set at the default of 3 days:
 
 ```
@@ -71,7 +82,21 @@ This mistake is not discovered until Day 7 at which point unraveling the correct
 Do we see the above scenario happen often? Nope not really. But given the imperfect nature of the human race anything is possible.
 Hence DSCheck. Stuff happens. But known "stuff" is better than unknown "stuff".
 
-The following is an example of the output of DSCheck using the --verbose switch:
+The following is an example of the output of DSCheck using the --verbose switch. It was produced by a Macbook running DSCheck against two Directory Server (DS) instances running on two VirtualBox VMs also running on the Macbook (`ds0.example.com` and `ds1.example.com`). While DSCheck was running one of the modrate was invoked on one of the DS instances:
+
+```
+./opendj/bin/modrate -p 1389 \
+                      -D "cn=directory manager" \
+                      -w password \
+                      -F -c 1 -t 1 \
+                      -b "uid=user.%d,ou=people,dc=example,dc=com" \
+                      -g "rand(10,200000)" \
+                      -g "randstr(16)" \
+                      'description:%2$s'
+```
+
+By running modrate while DSCheck was also running enabled DSCheck to find the occasional object that was in the process of being replicated.
+
 
 ```
 Hosts:ports = ds0.example.com:1389~ds1.example.com:1389
