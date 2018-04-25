@@ -39,6 +39,7 @@ public class DSCheck {
         Tracker[][] instancetracker;
 
         boolean verbose = false;
+        boolean fulldisplay = false;
         int passed = 0;
         int failed = 0;
         int repeatcheck = 1;
@@ -78,6 +79,10 @@ public class DSCheck {
                     case "--verbose":
                         verbose = true;
                         break;
+                    case "-f":
+                    case "--fulldisplay":
+                        fulldisplay = true;
+                        break;
                     default:
                         break;
                 }
@@ -113,9 +118,9 @@ public class DSCheck {
                             instancetracker[i][j] = new Tracker(instances[j]);
                         }
                         if (i < (checker.length - 1)) {
-                            checker[i] = new Checker(i, dsc, ((dncount / threads) * i), ((dncount / threads) * (i + 1)), dnfile, instances, repeatcheck, sleepcheck, threadtracker[i], instancetracker[i]);
+                            checker[i] = new Checker(i, dsc, ((dncount / threads) * i), ((dncount / threads) * (i + 1)), dnfile, instances, repeatcheck, sleepcheck, threadtracker[i], instancetracker[i], fulldisplay);
                         } else {
-                            checker[i] = new Checker(i, dsc, ((dncount / threads) * i), dncount, dnfile, instances, repeatcheck, sleepcheck, threadtracker[i], instancetracker[i]);
+                            checker[i] = new Checker(i, dsc, ((dncount / threads) * i), dncount, dnfile, instances, repeatcheck, sleepcheck, threadtracker[i], instancetracker[i], fulldisplay);
                         }
                         checker[i].start();
                     }
@@ -128,10 +133,12 @@ public class DSCheck {
                         passed = passed + threadtracker[i].passed;
                         failed = failed + threadtracker[i].failed;
                     }
+                    long endop = (long) new Date().getTime();
                     System.out.println("---------------------------------------------------");
                     System.out.println("   Total\t pass = " + passed + "\t fail = " + failed);
                     if (verbose) {
-                        System.out.println("\nPerformane stats per instances:");
+                        int ttx = 0;
+                        System.out.println("\nStats from DSCheck perspective with lapsed clock time = " + (endop - startop) * 1000 + " seconds:");
                         for (int i = 0; i < instances.length; i++) {
                             int c = 0;
                             long t = 0;
@@ -140,8 +147,11 @@ public class DSCheck {
                                 t = t + instancetracker[j][i].totaltime;
                             }
                             System.out.print(instancetracker[0][i].name + " called = " + c);
-                            System.out.println(" times; Average time per check = " + (t / c) + "ms");
+                            System.out.print(" times; Average time/call = " + (t / c) + "ms");
+                            System.out.println("; tx rate = " + ((float) (c / (float) (endop - startop)) * 1000) + "/sec");
+                            ttx = ttx + c;
                         }
+                        System.out.println("Cumulative transaction rate across all instances = " + ((float) (ttx / (float) (endop - startop)) * 1000) + "/sec");
                     }
                 } catch (ErrorResultException | InterruptedException | IOException ex) {
                     Logger.getLogger(DSCheck.class.getName()).log(Level.SEVERE, null, ex);
@@ -161,30 +171,22 @@ public class DSCheck {
 
     private static void help(int repeatcheck) {
         String help = "\nDSCheck usage:"
-                + "\njava -jar ./dist/DSCheck.jar --instances INSTANCE0:PORT0~INSTANCEn:PORTn /path/to/DNs/file"
                 + "\nrequired:"
                 + "\n\t--instances    | -i in a specific format using a tilde \"~\" to separate instances i.e. ds0.example.com:1389~ds1.example.com:1389~ds2.example.com:1389"
                 + "\n\t--bindDn       | -b identity to use when binding to DS i.e. cn=Directory Manager"
                 + "\n\t--bindPassword | -p password to use when binding to DS"
-                + "\n\t/path/to/DNs/file where each line in this file is a single DN"
+                + "\n\t/path/to/DNs/file where each line in this file is a single DN - example: uid=user.1234,ou=people,dc=example,dc=com"
                 + "\noptions:"
                 + "\n\t--threads      | -t {default = 1} number of threads to run; suggest start with 4x number of cores of system running DSCheck"
-                + "\n\t--verbose      | -v {default = false} full display of objects that did not match"
-                //                + "\n\t--csv      | -c {default = off} output in a comma delimited format"
+                + "\n\t--verbose      | -v {default = false} display DSCheck runtime stats"
+                + "\n\t--fulldisplay  | -f {default = false} display the entire object in question on standard error i.e. 2> error.out"
                 + "\n\t--repeat n     | -r n (default n = " + repeatcheck + "} maximum number of times to check object validity if found not valid across all instances"
                 + "\n\t--sleep t      | -s t {default t = 0} seconds to sleep until repeating validity check"
-                //                + "\n\t--fails /path/to/directory | -f /path/to/directory location to write objects that are deemed to be different for a particular DN"
                 + "\n\t--help         | -h this output\n"
                 + "\nExamples:"
-                //                + "\n\nRun 2 threads of load until stopped:"
-                //                + "\njava -jar ./dist/CPULoader.jar --lapsedtime 20000 --maxthreads 2"
-                //                + "\n\nIncrement thread count until threshold is exceeded:"
-                //                + "\njava -jar ./dist/CPULoader.jar --threshold 5"
-                //                + "\n\nIncrement thread count until threshold is exceeded and start again until stopped with output in csv format:"
-                //                + "\njava -jar ./dist/CPULoader.jar --threshold 5 --forever --csv\n";
                 + "";
         System.out.println(help);
-        System.out.println("java -jar ${DSCHECKHOME}/dist/DSCheck.jar --instances ${instances} ${TMPFILES}dns.txt");
+        System.out.println("java -jar ${DSCHECKHOME}/dist/DSCheck.jar --bindDn \"cn=Directory Manager\" --bindPassword \"dmpassword\" --instances ds0.example.com:1389~ds1.example.com:1389~ds2.example.com:1389 ${DSCHECKHOME}/tmp/dns.txt");
     }
 
 }

@@ -14,9 +14,14 @@ import java.util.logging.Logger;
 import org.forgerock.opendj.ldap.Connection;
 import org.forgerock.opendj.ldap.EntryNotFoundException;
 import org.forgerock.opendj.ldap.ErrorResultException;
+import org.forgerock.opendj.ldap.ErrorResultIOException;
 import org.forgerock.opendj.ldap.MultipleEntriesFoundException;
+import org.forgerock.opendj.ldap.ResultCode;
 import org.forgerock.opendj.ldap.SearchScope;
 import org.forgerock.opendj.ldap.responses.SearchResultEntry;
+import org.forgerock.opendj.ldap.responses.SearchResultReference;
+import org.forgerock.opendj.ldif.ConnectionEntryReader;
+import org.forgerock.opendj.ldif.LDIFEntryWriter;
 
 /**
  *
@@ -32,15 +37,17 @@ class Checker extends Thread {
     private final String dnfile;
     private final String[] instances;
     private final Connection[] dsc;
-    private String dsetag = null;
+    private final String dsetag = null;
     private String dsobject = null;
     private String dsbasedn = null;
-    private int repeatcheck;
+    private final int repeatcheck;
     private final int sleepcheck;
-    private Tracker threadtracker;
-    private Tracker instancetracker[];
+    private final Tracker threadtracker;
+    private final Tracker instancetracker[];
+    private boolean fulldisplay = false;
+    final LDIFEntryWriter dswriter = new LDIFEntryWriter(System.err);
 
-    Checker(int threadid, Connection[] dsc, long sp, long ep, String dnfile, String[] instances, int repeatcheck, int sleepcheck, Tracker threadtracker, Tracker[] instancetracker) {
+    Checker(int threadid, Connection[] dsc, long sp, long ep, String dnfile, String[] instances, int repeatcheck, int sleepcheck, Tracker threadtracker, Tracker[] instancetracker, boolean fulldisplay) {
         this.dsc = dsc;
         this.threadid = threadid;
         this.sp = sp;
@@ -51,6 +58,7 @@ class Checker extends Thread {
         this.sleepcheck = sleepcheck;
         this.threadtracker = threadtracker;
         this.instancetracker = instancetracker;
+        this.fulldisplay = fulldisplay;
     }
 
     @Override
@@ -67,12 +75,14 @@ class Checker extends Thread {
                     long starttx = 0;
                     long endtx = 0;
                     boolean validobject = true;
+                    boolean hadissue = false;
                     String objectstate = "valid";
                     String[] etags = new String[dsc.length];
                     int x = brdn.indexOf(",");
                     dsobject = brdn.substring(0, x);
                     dsbasedn = brdn.substring((x + 1), brdn.length());
                     int chex = 0;
+                    int checkcount = 0;
                     int i;
                     while (chex < repeatcheck) {
                         for (i = 0; i < dsc.length; i++) {
@@ -105,21 +115,37 @@ class Checker extends Thread {
                             threadtracker.passed++;
                         } else {
                             chex++;
+                            checkcount++;
+                            hadissue = true;
                             if (chex == repeatcheck) {
                                 threadtracker.failed++;
                             } else {
                                 sleep(sleepcheck);
+                                validobject = true;
                             }
                         }
                     }
                     long endop = (long) new Date().getTime();
                     threadtracker.totaltime = threadtracker.totaltime + (endop - startop);
                     if (!validobject) {
-                        String response = "Object " + dsobject + "," + dsbasedn + " checked " + chex + " time(s) = " + objectstate + "\n";
+                        String response = "Object " + dsobject + "," + dsbasedn + " checked " + checkcount + " time(s) = " + objectstate + "\n";
                         for (i = 0; i < etags.length; i++) {
                             response = response + "Instance: " + instances[i] + " etag = " + etags[i] + "\n";
                         }
                         System.out.println(response);
+                        if (fulldisplay) {
+                            fulldisplay();
+                        }
+                    }
+                    if ((hadissue) && (validobject)) {
+                        String response = "Object " + dsobject + "," + dsbasedn + " checked " + checkcount + " time(s) due to inconsistencies but is now MATCHED \n";
+                        for (i = 0; i < etags.length; i++) {
+                            response = response + "Instance: " + instances[i] + " etag = " + etags[i] + "\n";
+                        }
+                        System.out.println(response);
+                        if (fulldisplay) {
+                            fulldisplay();
+                        }
                     }
                 }
             }
@@ -128,5 +154,32 @@ class Checker extends Thread {
             Logger.getLogger(Checker.class.getName()).log(Level.SEVERE, null, ex);
         }
 
+    }
+
+    private void fulldisplay() {
+        for (int i = 0; i < dsc.length; i++) {
+            try {
+                final ConnectionEntryReader reader = dsc[i].search(dsbasedn, SearchScope.SINGLE_LEVEL, dsobject, "*");
+                while (reader.hasNext()) {
+                    if (!reader.isReference()) {
+                        final SearchResultEntry entry = reader.readEntry();
+                        dswriter.writeComment("Search result entry in " + instances[i] + ": " + entry.getName().toString());
+                        dswriter.writeEntry(entry);
+                    } else {
+                        final SearchResultReference ref = reader.readReference();
+                        dswriter.writeComment("Search result reference: " + ref.getURIs().toString());
+                    }
+                }
+                dswriter.flush();
+            } catch (final ErrorResultIOException e) {
+                System.err.println(e.getMessage());
+                System.exit(e.getCause().getResult().getResultCode().intValue());
+                return;
+            } catch (final IOException e) {
+                System.err.println(e.getMessage());
+                System.exit(ResultCode.CLIENT_SIDE_LOCAL_ERROR.intValue());
+                return;
+            }
+        }
     }
 }

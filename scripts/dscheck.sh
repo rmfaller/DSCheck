@@ -2,6 +2,9 @@
 # location of DS binaries such as ldapsearch
 DSHOME=/Volumes/twoTBdrive/zips/opendj
 
+# number of DSCheck threads to run simultaneously
+THREADS=8
+
 # location of the DSCheck /dist folder|directory
 DSCHECKHOME=$HOME/projects/DSCheck
 
@@ -33,10 +36,6 @@ else
   fi
 fi
 
-# Using the instance specified above use the following to discover instances listed in the replication topology
-REPBASEDN="cn=replication server,cn=Multimaster Synchronization,cn=Synchronization Providers,cn=config"
-MONITORBASEDN="cn=monitor"
-
 # Base DN for compare objects
 # As is the case with more than one replication topology it is advised that a copies of
 # this script be made per base DN. For example:
@@ -45,11 +44,12 @@ MONITORBASEDN="cn=monitor"
 # and make the needed changes per objects that need to be checked
 BASEDN="ou=People,dc=example,dc=com"
 
+# Using the instance specified above use the following to discover instances listed in the replication topology
+REPBASEDN="cn=replication server,cn=Multimaster Synchronization,cn=Synchronization Providers,cn=config"
+MONITORBASEDN="cn=monitor"
+
 # location to place output 
 TMPFILES=$DSCHECKHOME/tmp
-
-# number of DSCheck threads to run simultaneously
-THREADS=4
 
 STARTTIMESTAMP=`date '+%Y%m%d%H%M%S'`
 
@@ -74,7 +74,6 @@ if [[ ${1} ]]
 # run a full check against all objects
     FULLCHECK=true
   else 
-    echo "Time to be used = ${1}"
     CREATETIMESTAMP="${1}"
     MODIFYTIMESTAMP="${1}"
     FULLCHECK=false
@@ -82,16 +81,16 @@ if [[ ${1} ]]
   fi 
   else 
     CREATEYEAR=2018
-    CREATEMONTH=03
-    CREATEDAY=16
+    CREATEMONTH=04
+    CREATEDAY=22
     CREATEHOUR=14
     CREATEMINUTE=45
     CREATESECOND=59
     CREATETIMESTAMP="${CREATEYEAR}${CREATEMONTH}${CREATEDAY}${CREATEHOUR}${CREATEMINUTE}${CREATESECOND}Z"
 
     MODIFYYEAR=2018
-    MODIFYMONTH=03
-    MODIFYDAY=16
+    MODIFYMONTH=04
+    MODIFYDAY=22
     MODIFYHOUR=14
     MODIFYMINUTE=45
     MODIFYSECOND=32
@@ -192,23 +191,23 @@ if  [[ ${FULLCHECK} == "true" ]]
   rm ${TMPFILES}/full-*.txt
 else
   echo "done performing partial scan of all objects in ${BASEDN}."
-  echo "Time stamp to be used: Create = ${CREATETIMESTAMP} & Modify = ${MODIFYTIMESTAMP}."
+#  echo "Time stamp to be used: Create = ${CREATETIMESTAMP} & Modify = ${MODIFYTIMESTAMP}."
   echo "Now collating and sorting..."
   echo "--------------------------------"
   for host in ${hosts}
     do
-    echo "Created entries after ${CREATETIMESTAMP} in ${host}:"
+    echo -n "Created entries after ${CREATETIMESTAMP} in ${host}: "
     if [[ -e "${TMPFILES}/create-${host}.txt" ]]
       then
-      wc -l ${TMPFILES}/create-${host}.txt 
+        echo `wc -l ${TMPFILES}/create-${host}.txt | sed -e 's/^[ \t]*//' | cut -d" " -f1`
     else
       echo "0"
       echo -n > ${TMPFILES}/create-${host}.txt
     fi
-    echo "Modified entries after ${MODIFYTIMESTAMP} in ${host}:"
+    echo -n "Modified entries after ${MODIFYTIMESTAMP} in ${host}: "
     if [[ -e "${TMPFILES}/modify-${host}.txt" ]]
       then
-      wc -l ${TMPFILES}/modify-${host}.txt 
+      echo `wc -l ${TMPFILES}/modify-${host}.txt | sed -e 's/^[ \t]*//' | cut -d" " -f1`
     else
       echo "0"
       echo -n > ${TMPFILES}/modify-${host}.txt
@@ -229,15 +228,35 @@ totaldns=`wc -l ${TMPFILES}/dns.txt | sed -e 's/^[ \t]*//' | cut -d" " -f1`
 echo "Done collating and sorting."
 if [[ ($totaldns < 1) ]]
   then
-  echo "There are no objects to check."
+  echo ""
+  echo "-->> There are NO objects to check <<--"
 else
   if  [[ ${FULLCHECK} == "true" ]]
     then
+    echo "If --fulldisplay is used data is written to ${TMPFILES}/objects-${DSCURRENTTIME}.err"
     echo "Checking all objects..."
-    java -jar ${DSCHECKHOME}/dist/DSCheck.jar --bindDn "${DSID}" --bindPassword "${DSPASSWORD}" --threads ${THREADS} --verbose --repeat 2 --sleep 1 --instances ${instances} ${TMPFILES}/dns.txt
+    java -jar ${DSCHECKHOME}/dist/DSCheck.jar \
+              --bindDn "${DSID}" \
+              --bindPassword "${DSPASSWORD}" \
+              --threads ${THREADS} \
+              --verbose \
+              --fulldisplay \
+              --repeat 3 \
+              --sleep 2 \
+              --instances ${instances} \
+              ${TMPFILES}/dns.txt 2> ${TMPFILES}/objects-${DSCURRENTTIME}.err
   else
     echo "Checking objects that meet criteria..."
-    java -jar ${DSCHECKHOME}/dist/DSCheck.jar --bindDn "${DSID}" --bindPassword "${DSPASSWORD}" --threads ${THREADS} --verbose --repeat 4 --sleep 4 --instances ${instances} ${TMPFILES}/dns.txt
+    java -jar ${DSCHECKHOME}/dist/DSCheck.jar \
+              --bindDn "${DSID}" \
+              --bindPassword "${DSPASSWORD}" \
+              --threads ${THREADS} \
+              --verbose \
+              --fulldisplay \
+               --repeat 4 \
+               --sleep 1 \
+               --instances ${instances} \
+               ${TMPFILES}/dns.txt 2> ${TMPFILES}/objects-${DSCURRENTTIME}.err
   fi
 fi
 
