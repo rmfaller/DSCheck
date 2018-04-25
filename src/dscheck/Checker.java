@@ -112,7 +112,7 @@ class Checker extends Thread {
                             } catch (EntryNotFoundException ex) {
                                 validobject = false;
                                 objectstate = "MISSING";
-                                etags[i] = "NULL";
+                                etags[i] = "NONEXISTENT";
                             } catch (MultipleEntriesFoundException ex) {
                                 validobject = false;
                                 objectstate = "DUPLICATE";
