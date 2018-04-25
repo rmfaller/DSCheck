@@ -29,7 +29,7 @@ Since no environment is failsafe DSCheck provides a way to check and validate da
 
 DSCheck is not a real time utility. From the time DSCheck starts until completion data could change. Depending on the speed in which replication can complete across all instances at certain points in time specific objects may NOT have the exact same data. DSCheck can accommodate this by rechecking unmatched objects based on flags/switches selected.
 
-Running DSCheck is best started using `./scripts/dscheck.sh` as it enables the setting of environmental parameters. The script also extracts and processes a list of DNs from each instance in the replication topology.
+Running DSCheck is best started using `./scripts/dscheck.sh full` as it enables the setting of environmental parameters. The script also extracts and processes a list of DNs from each instance in the replication topology.
 
 Once the preprocessing is complete the actual examining of the each object by checking the etag value is done by `java -jar ./dist/DSCheck.jar` with the appropriate switches. See DSCheck usage below. 
 
