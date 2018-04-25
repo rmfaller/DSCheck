@@ -87,20 +87,19 @@ Do we see the above scenario happen often? Nope not really. But given the imperf
 Hence DSCheck. Stuff happens. But known "stuff" is better than unknown "stuff".
 
 The following is an example of the output of DSCheck using the --verbose switch. It was produced by a Macbook running DSCheck against two Directory Service instances running on two VirtualBox VMs also running on the Macbook (`ds0.example.com` and `ds1.example.com`). While DSCheck was running on the Macbook one of the Directory Service instances ran modrate. The steps to create the test environment:
-1. install at least two DS instances following the documentation
-2. when installing allow DS to prepopulate with test entries on one instance (100,000 or more)
-3. establish replication between DS instances
-4. let the instances sync up via replication
-5. pick an instance and perform an export-ldif
-6. edit the resulting LDIF with your favorite text editor (i.e. vi) 
+1. install at least two DS instances following the documentation [https://backstage.forgerock.com/docs/ds/5.5/install-guide/]()
+2. when installing allow DS to prepopulate with test entries on one instance (200,000 or more)
+3. establish replication between DS instances [https://backstage.forgerock.com/docs/ds/5.5/admin-guide/#configuring-repl]()
+4. let the instances sync up via replication [https://backstage.forgerock.com/docs/ds/5.5/admin-guide/#init-repl]()
+5. pick an instance and perform an export-ldif [https://backstage.forgerock.com/docs/ds/5.5/reference/#export-ldif-1]()
+6. edit the resulting LDIF with your favorite text editor (i.e. vi) (*if you need guidance for this step than maybe you should not be doing this ; )* )
 7. mangle the first few entries such as:
 	1. deleting the entire LDIF entries for user.1 and user.3
-	2. changing the telephone attribute's value to all 9s
+	2. changing the telephonenumber attribute's value to all 9s
 8. save the LDIF
-9. use import-ldif on only one DS instance
+9. use import-ldif on only one DS instance [https://backstage.forgerock.com/docs/ds/5.5/reference/#import-ldif-1]()
 
 Using this process, export-ldif and import-ldif, will cause one DS instance to have different data as importing does NOT have the same affect as ldapmodify. Importing does not place anything into the changelog. 
-
 
 ```
 ./opendj/bin/modrate -p 1389 \
@@ -113,7 +112,7 @@ Using this process, export-ldif and import-ldif, will cause one DS instance to h
                       'description:%2$s'
 ```
 
-By running modrate while DSCheck was also running enabled DSCheck to find the occasional object that was in the process of being replicated.
+By running `modrate` while DSCheck was also running it enabled DSCheck to find the occasional object that was in the process of being replicated.
 
 
 ```
