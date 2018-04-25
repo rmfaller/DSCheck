@@ -20,6 +20,7 @@ For more information on DS replication please see: [https://backstage.forgerock.
 What we do find is that some external event can cause a lack of confidence for the Directory Service operators in the consistency of the data persisted by the Directory Service. Some of these external events can include:
 
 * Importing the wrong data into one of the instances
+* Restoring data that contains obsolete generation-ids
 * Instance(s) improperly taken off line
 * Instance(s) returned to a replication topology but with a different hostname
 * Instance(s) off-line beyond the purge delay setting [https://backstage.forgerock.com/docs/ds/5.5/admin-guide/#troubleshoot-repl]()
@@ -32,7 +33,9 @@ Running DSCheck is best started using `./scripts/dscheck.sh` as it enables the s
 
 Once the preprocessing is complete the actual examining of the each object by checking the etag value is done by `java -jar ./dist/DSCheck.jar` with the appropriate switches. See DSCheck usage below. 
 
-Running DSCheck can place load on the system running the DSCheck as well as the target DS instances. The ldapsearch commands used allow multiple, simultaneous threads of execution. DO NOT run DSCheck against a production environment unless you fully understand the potential load impact. Off-hours are recommended.
+Running DSCheck can place load on the system running the DSCheck as well as the target DS instances. The ldapsearch commands used allow multiple, simultaneous threads of execution. DO NOT run DSCheck against a production environment unless you fully understand the potential load impact. 
+
+**Running DSCheck during off-hours as well as on a system not running a production service are highly recommended.**
 
 ```
 DSCheck usage:
@@ -144,7 +147,7 @@ Object uid=user.155054,ou=People,dc=example,dc=com checked 1 time(s) due to inco
 Instance: ds0.example.com:1389 etag = 00000000aae9eaba
 Instance: ds1.example.com:1389 etag = 00000000aae9eaba
 
-Object uid=user.2,ou=People,dc=example,dc=com checked 3 time(s) = MISSING
+Object uid=user.2,ou=People,dc=example,dc=com checked 3 time(s) = NONEXISTENT
 Instance: ds0.example.com:1389 etag = NULL
 Instance: ds1.example.com:1389 etag = 00000000175fc400
 
