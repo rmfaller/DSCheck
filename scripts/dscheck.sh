@@ -20,7 +20,7 @@
 DSHOME=/Volumes/twoTBdrive/zips/opendj
 
 # number of DSCheck threads to run simultaneously
-THREADS=8
+THREADS=16
 
 # location of the DSCheck /dist folder|directory
 DSCHECKHOME=$HOME/projects/DSCheck

@@ -20,7 +20,6 @@ class Tracker {
     long totaltime = 0;
     
     public Tracker() {
-        
     }
     
     public Tracker (String name) {

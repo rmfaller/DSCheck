@@ -58,9 +58,10 @@ class Checker extends Thread {
     private final Tracker threadtracker;
     private final Tracker instancetracker[];
     private boolean fulldisplay = false;
+    private boolean verbose = false;
     final LDIFEntryWriter dswriter = new LDIFEntryWriter(System.err);
 
-    Checker(int threadid, Connection[] dsc, long sp, long ep, String dnfile, String[] instances, int repeatcheck, int sleepcheck, Tracker threadtracker, Tracker[] instancetracker, boolean fulldisplay) {
+    Checker(int threadid, Connection[] dsc, long sp, long ep, String dnfile, String[] instances, int repeatcheck, int sleepcheck, Tracker threadtracker, Tracker[] instancetracker, boolean fulldisplay, boolean verbose) {
         this.dsc = dsc;
         this.threadid = threadid;
         this.sp = sp;
@@ -72,6 +73,7 @@ class Checker extends Thread {
         this.threadtracker = threadtracker;
         this.instancetracker = instancetracker;
         this.fulldisplay = fulldisplay;
+        this.verbose = verbose;
     }
 
     @Override
@@ -81,9 +83,20 @@ class Checker extends Thread {
             br = new BufferedReader(new FileReader(dnfile));
             String brdn;
             long linecount = -1;
+            int txcnt = 0;
             while ((brdn = br.readLine()) != null) {
                 linecount++;
                 if ((linecount >= sp) && (linecount < ep)) {
+                    if ((threadid == 0) && (verbose)) {
+                        if (txcnt == 5000) {
+//                            System.out.println("Approximately " + ((float)(linecount / (float)ep) * 100) + "% completed");
+                            System.out.format("Approximately %6.2f", ((float) (linecount / (float) ep) * 100));
+                            System.out.println("% completed");
+                            txcnt = 0;
+                        } else {
+                            txcnt++;
+                        }
+                    }
                     long startop = (long) new Date().getTime();
                     long starttx = 0;
                     long endtx = 0;
@@ -133,7 +146,7 @@ class Checker extends Thread {
                             if (chex == repeatcheck) {
                                 threadtracker.failed++;
                             } else {
-                                sleep(sleepcheck);
+                                Thread.sleep(sleepcheck);
                                 validobject = true;
                             }
                         }
@@ -141,13 +154,13 @@ class Checker extends Thread {
                     long endop = (long) new Date().getTime();
                     threadtracker.totaltime = threadtracker.totaltime + (endop - startop);
                     if (!validobject) {
-                        String response = "Object " + dsobject + "," + dsbasedn + " checked " + checkcount + " time(s) = " + objectstate + "\n";
+                        String response = "\nObject " + dsobject + "," + dsbasedn + " checked " + checkcount + " time(s) = " + objectstate + "\n";
                         for (i = 0; i < etags.length; i++) {
                             response = response + "Instance: " + instances[i] + " etag = " + etags[i] + "\n";
                         }
                         System.out.println(response);
                         if (fulldisplay) {
-                            fulldisplay();
+                            fulldisplay(objectstate);
                         }
                     }
                     if ((hadissue) && (validobject)) {
@@ -157,10 +170,13 @@ class Checker extends Thread {
                         }
                         System.out.println(response);
                         if (fulldisplay) {
-                            fulldisplay();
+                            fulldisplay(objectstate);
                         }
                     }
                 }
+            }
+            if ((threadid == 0) && (verbose)) {
+                System.out.println("100% Complete\n");
             }
             br.close();
         } catch (IOException | InterruptedException ex) {
@@ -169,14 +185,14 @@ class Checker extends Thread {
 
     }
 
-    private void fulldisplay() {
+    private void fulldisplay(String state) {
         for (int i = 0; i < dsc.length; i++) {
             try {
                 final ConnectionEntryReader reader = dsc[i].search(dsbasedn, SearchScope.SINGLE_LEVEL, dsobject, "*");
                 while (reader.hasNext()) {
                     if (!reader.isReference()) {
                         final SearchResultEntry entry = reader.readEntry();
-                        dswriter.writeComment("Search result entry in " + instances[i] + ": " + entry.getName().toString());
+                        dswriter.writeComment("Object " + instances[i] + ": " + entry.getName().toString() + " = " + state);
                         dswriter.writeEntry(entry);
                     } else {
                         final SearchResultReference ref = reader.readReference();

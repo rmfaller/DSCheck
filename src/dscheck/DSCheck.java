@@ -122,7 +122,7 @@ public class DSCheck {
                         for (int i = 0; i < instances.length; i++) {
                             System.out.println("\t" + instances[i]);
                         }
-                        System.out.println("=============================================\n");
+                        System.out.println("=============================================");
                     }
                     long startop = (long) new Date().getTime();
                     for (int i = 0; i < checker.length; i++) {
@@ -131,9 +131,9 @@ public class DSCheck {
                             instancetracker[i][j] = new Tracker(instances[j]);
                         }
                         if (i < (checker.length - 1)) {
-                            checker[i] = new Checker(i, dsc, ((dncount / threads) * i), ((dncount / threads) * (i + 1)), dnfile, instances, repeatcheck, sleepcheck, threadtracker[i], instancetracker[i], fulldisplay);
+                            checker[i] = new Checker(i, dsc, ((dncount / threads) * i), ((dncount / threads) * (i + 1)), dnfile, instances, repeatcheck, sleepcheck, threadtracker[i], instancetracker[i], fulldisplay, verbose);
                         } else {
-                            checker[i] = new Checker(i, dsc, ((dncount / threads) * i), dncount, dnfile, instances, repeatcheck, sleepcheck, threadtracker[i], instancetracker[i], fulldisplay);
+                            checker[i] = new Checker(i, dsc, ((dncount / threads) * i), dncount, dnfile, instances, repeatcheck, sleepcheck, threadtracker[i], instancetracker[i], fulldisplay, verbose);
                         }
                         checker[i].start();
                     }
@@ -148,10 +148,10 @@ public class DSCheck {
                     }
                     long endop = (long) new Date().getTime();
                     System.out.println("---------------------------------------------------");
-                    System.out.println("   Total\t pass = " + passed + "\t fail = " + failed);
+                    System.out.println("Total    pass = " + passed + " fail = " + failed);
                     if (verbose) {
                         int ttx = 0;
-                        System.out.println("\nStats from DSCheck perspective with lapsed clock time = " + (endop - startop) * 1000 + " seconds:");
+                        System.out.println("\nStats from DSCheck perspective with lapsed clock time = " + (((endop - startop) * 1000) / 60) + " minutes:");
                         for (int i = 0; i < instances.length; i++) {
                             int c = 0;
                             long t = 0;
