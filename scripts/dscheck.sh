@@ -293,4 +293,4 @@ ENDTIMESTAMP=`date '+%Y%m%d%H%M%S'`
 # echo "Started on ${STARTTIMESTAMP}; Completed on ${ENDTIMESTAMP}" 
 echo "------- DSCheck completed on $(date) --------"
 echo ""
-# ${DSCHECKHOME}/scripts/dscheck.sh ${DSCURRENTTIME}
+${DSCHECKHOME}/scripts/dscheck.sh ${DSCURRENTTIME}
