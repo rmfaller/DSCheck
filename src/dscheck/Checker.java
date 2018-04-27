@@ -164,7 +164,7 @@ class Checker extends Thread {
                         }
                     }
                     if ((hadissue) && (validobject)) {
-                        String response = "Object " + dsobject + "," + dsbasedn + " checked " + checkcount + " time(s) due to inconsistencies but is now MATCHED \n";
+                        String response = "Object " + dsobject + "," + dsbasedn + " checked " + checkcount + " time(s) due mismatch now MATCHED after " + (endop - startop) + "ms \n";
                         for (i = 0; i < etags.length; i++) {
                             response = response + "Instance: " + instances[i] + " etag = " + etags[i] + "\n";
                         }
