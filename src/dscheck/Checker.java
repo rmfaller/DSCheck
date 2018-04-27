@@ -90,8 +90,8 @@ class Checker extends Thread {
                     if ((threadid == 0) && (verbose)) {
                         if (txcnt == 5000) {
 //                            System.out.println("Approximately " + ((float)(linecount / (float)ep) * 100) + "% completed");
-                            System.out.format("Approximately %6.2f", ((float) (linecount / (float) ep) * 100));
-                            System.out.println("% completed");
+                            System.out.format("Approximately %5.2f", ((float) (linecount / (float) ep) * 100));
+                            System.out.println("% completed on " + new Date().toString());
                             txcnt = 0;
                         } else {
                             txcnt++;

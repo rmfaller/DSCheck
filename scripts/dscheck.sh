@@ -20,7 +20,7 @@
 DSHOME=/Volumes/twoTBdrive/zips/opendj
 
 # number of DSCheck threads to run simultaneously
-THREADS=16
+THREADS=8
 
 # location of the DSCheck /dist folder|directory
 DSCHECKHOME=$HOME/projects/DSCheck
@@ -69,8 +69,9 @@ MONITORBASEDN="cn=monitor"
 TMPFILES=$DSCHECKHOME/tmp
 
 STARTTIMESTAMP=`date '+%Y%m%d%H%M%S'`
+echo "Note: system date running DSCheck may differ from DS instances"
 
-# set current time based on DS instance(s) NOT of the current time of the system running DSCheck
+# set current time based on DS instance(s) NOT the current time of the system running DSCheck
 DSCURRENTTIME=`${DSHOME}/bin/ldapsearch \
               --hostname "${DSHOST}" \
               --port "${DSPORT}" \
@@ -115,6 +116,8 @@ if [[ ${1} ]]
 fi 
 
 # for each instance gathered from instance specified above check that these instances share the same replication topology information
+echo "-------- $(date) --------"
+echo "Checking replication topology"
 hosts=`${DSHOME}/bin/ldapsearch \
        --hostname "${DSHOST}" \
        --port "${DSPORT}" \
@@ -127,6 +130,7 @@ hosts=`${DSHOME}/bin/ldapsearch \
          | sed 's/[ \t]*$//'`
 instances=`echo ${hosts} | sed -e 's/ /:'"${DSPORT}"'~/g'`
 instances="${instances}:${DSPORT}"
+echo "-------- $(date) --------"
 echo "Hosts:ports = ${instances}"
 
 # NOTE: the following ldapsearch operations can have a significant impact on both the system running DSCheck 
@@ -178,15 +182,20 @@ for host in ${hosts}
       | grep ^dn > ${TMPFILES}/modify-${host}.txt &
   fi
 done
+
+echo "-------- $(date) --------"
 echo -n "Searching for objects..."
+
 # wait for ldapsearch operations to complete
 wait
+echo "done searching in ${BASEDN}."
+echo "-------- $(date) --------"
+echo -n "Started Collating and sorting "
 
 # Process results from ldapsearch operations
 if  [[ ${FULLCHECK} == "true" ]]
   then
-  echo "done performing full scan of all objects in ${BASEDN}."
-  echo "Now collating and sorting..."
+  echo "from full scan..."
 # check object entry count of each DS instance
   for host in ${hosts}
     do
@@ -207,10 +216,7 @@ if  [[ ${FULLCHECK} == "true" ]]
 # clean up temporary files
   rm ${TMPFILES}/full-*.txt
 else
-  echo "done performing partial scan of all objects in ${BASEDN}."
-#  echo "Time stamp to be used: Create = ${CREATETIMESTAMP} & Modify = ${MODIFYTIMESTAMP}."
-  echo "Now collating and sorting..."
-  echo "--------------------------------"
+  echo "from partial scan using: Create = ${CREATETIMESTAMP} & Modify = ${MODIFYTIMESTAMP}..."
   for host in ${hosts}
     do
     echo -n "Created entries after ${CREATETIMESTAMP} in ${host}: "
@@ -229,7 +235,7 @@ else
       echo "0"
       echo -n > ${TMPFILES}/modify-${host}.txt
     fi
-  echo "--------------------------------"
+  echo "++++++++++++++++++++++++++++++++++"
   done
 # collect all the DNs from each host that were created and/or modified on or after the specified time stamp into a single sorted file
 # check for uniqueness of each DN counting the number of recurrences which should match the number of DS instances 
@@ -243,6 +249,8 @@ fi
 cat ${TMPFILES}/checkentries-${DSCURRENTTIME}.txt | cut -d" " -f3 > ${TMPFILES}/dns.txt
 totaldns=`wc -l ${TMPFILES}/dns.txt | sed -e 's/^[ \t]*//' | cut -d" " -f1`
 echo "Done collating and sorting."
+echo "-------- $(date) --------"
+
 if [[ ($totaldns < 1) ]]
   then
   echo ""
@@ -283,7 +291,6 @@ fi
 
 ENDTIMESTAMP=`date '+%Y%m%d%H%M%S'`
 # echo "Started on ${STARTTIMESTAMP}; Completed on ${ENDTIMESTAMP}" 
-echo "+++++++++++++++++++++++++++++++++"
-echo "End of dscheck"
+echo "------- DSCheck completed on $(date) --------"
 echo ""
-${DSCHECKHOME}/scripts/dscheck.sh ${DSCURRENTTIME}
+# ${DSCHECKHOME}/scripts/dscheck.sh ${DSCURRENTTIME}

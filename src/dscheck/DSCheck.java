@@ -151,7 +151,7 @@ public class DSCheck {
                     System.out.println("Total    pass = " + passed + " fail = " + failed);
                     if (verbose) {
                         int ttx = 0;
-                        System.out.println("\nStats from DSCheck perspective with lapsed clock time = " + (((endop - startop) * 1000) / 60) + " minutes:");
+                        System.out.println("\nStats from DSCheck perspective with lapsed clock time = " + (((endop - startop) / 1000) / 60) + " minutes:");
                         for (int i = 0; i < instances.length; i++) {
                             int c = 0;
                             long t = 0;
