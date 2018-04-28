@@ -154,7 +154,7 @@ class Checker extends Thread {
                     long endop = (long) new Date().getTime();
                     threadtracker.totaltime = threadtracker.totaltime + (endop - startop);
                     if (!validobject) {
-                        String response = "\nObject " + dsobject + "," + dsbasedn + " checked " + checkcount + " time(s) = " + objectstate + "\n";
+                        String response = "\nObject " + dsobject + "," + dsbasedn + " checked " + checkcount + " time(s) for " + (endop - startop) + "ms = " + objectstate + "\n";
                         for (i = 0; i < etags.length; i++) {
                             response = response + "Instance: " + instances[i] + " etag = " + etags[i] + "\n";
                         }
@@ -164,7 +164,7 @@ class Checker extends Thread {
                         }
                     }
                     if ((hadissue) && (validobject)) {
-                        String response = "Object " + dsobject + "," + dsbasedn + " checked " + checkcount + " time(s) due mismatch now MATCHED after " + (endop - startop) + "ms \n";
+                        String response = "Object " + dsobject + "," + dsbasedn + " checked " + checkcount + " time(s) for " + (endop - startop) + "ms initial mismatch = MATCHED \n";
                         for (i = 0; i < etags.length; i++) {
                             response = response + "Instance: " + instances[i] + " etag = " + etags[i] + "\n";
                         }
