@@ -266,8 +266,8 @@ else
               --threads ${THREADS} \
               --verbose \
               --fulldisplay \
-              --repeat 3 \
-              --sleep 2 \
+              --repeat 16 \
+              --sleep 4 \
               --instances ${instances} \
               ${TMPFILES}/dns.txt 2> ${TMPFILES}/objects-${DSCURRENTTIME}.err
   else
@@ -278,8 +278,8 @@ else
               --threads ${THREADS} \
               --verbose \
               --fulldisplay \
-               --repeat 4 \
-               --sleep 1 \
+               --repeat 16 \
+               --sleep 4 \
                --instances ${instances} \
                ${TMPFILES}/dns.txt 2> ${TMPFILES}/objects-${DSCURRENTTIME}.err
   fi
