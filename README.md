@@ -49,7 +49,7 @@ options:
 	--verbose      | -v {default = false} display DSCheck runtime stats
 	--fulldisplay  | -f {default = false} display the entire object in question on standard error i.e. 2> error.out
 	--repeat n     | -r n (default n = 1} maximum number of times to check object validity if found not valid across all instances
-	--sleep t      | -s t {default t = 0} seconds to sleep until repeating validity check
+	--sleep t      | -s t {default t = 0} seconds to sleep until repeating validity check 
 	--help         | -h this output
 
 Examples:
