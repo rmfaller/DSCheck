@@ -141,7 +141,7 @@ public class DSCheck {
                         checker[i].join();
                         if (verbose) {
                             System.out.print(threadtracker[i].name + " pass = " + threadtracker[i].passed + " fail = " + threadtracker[i].failed);
-                            System.out.println("; Average time per check = " + (threadtracker[i].totaltime / (threadtracker[i].passed + threadtracker[i].failed)) + "ms against " + instances.length + " instances");
+                            System.out.println("; Average time per check = " + (float)(threadtracker[i].totaltime / (float)(threadtracker[i].passed + threadtracker[i].failed)) + "ms against " + instances.length + " instances");
                         }
                         passed = passed + threadtracker[i].passed;
                         failed = failed + threadtracker[i].failed;
@@ -160,7 +160,7 @@ public class DSCheck {
                                 t = t + instancetracker[j][i].totaltime;
                             }
                             System.out.print(instancetracker[0][i].name + " called = " + c);
-                            System.out.print(" times; Average time/call = " + (t / c) + "ms");
+                            System.out.print(" times; Average time/call = " + (float)(t / (float) c) + "ms");
                             System.out.println("; tx rate = " + ((float) (c / (float) (endop - startop)) * 1000) + "/sec");
                             ttx = ttx + c;
                         }

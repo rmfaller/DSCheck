@@ -16,13 +16,14 @@
 # ForgeRock shall not be liable for any direct, indirect or consequential damages
 # or costs of any type arising out of any action taken by you or others related to the code.
 
-# location of DS binaries such as ldapsearch
+# location of Directory Server as access to the binaries such as ldapsearch is required
 DSHOME=/Volumes/twoTBdrive/zips/opendj
 
 # number of DSCheck threads to run simultaneously
+# this value can be higher than the available cores
 THREADS=8
 
-# location of the DSCheck /dist folder|directory
+# location of the DSCheck ./dist folder|directory
 DSCHECKHOME=$HOME/projects/DSCheck
 
 # One of the DS instances that is part of the replication topology
@@ -53,8 +54,8 @@ else
   fi
 fi
 
-# Base DN for compare objects
-# As is the case with more than one replication topology it is advised that a copies of
+# Base DN for objects to compare
+# As is the case with more than one replication topology it is advised that copies of
 # this script be made per base DN. For example:
 #   o dscheck-people.sh 
 #   o dscheck-devices.sh
@@ -69,7 +70,7 @@ MONITORBASEDN="cn=monitor"
 TMPFILES=$DSCHECKHOME/tmp
 
 STARTTIMESTAMP=`date '+%Y%m%d%H%M%S'`
-echo "Note: system date running DSCheck may differ from DS instances"
+echo "Note: date & time of system running DSCheck may differ from DS instances"
 
 # set current time based on DS instance(s) NOT the current time of the system running DSCheck
 DSCURRENTTIME=`${DSHOME}/bin/ldapsearch \
@@ -138,7 +139,7 @@ echo "Hosts:ports = ${instances}"
 
 for host in ${hosts}
   do
-# list out each instance replication topology
+# list out each instance in replication topology
   echo "Replication hosts shown in ${host}:"
   ${DSHOME}/bin/ldapsearch \
     --hostname "${host}" \
@@ -149,7 +150,8 @@ for host in ${hosts}
     | grep ^ds-cfg-replication-server \
     | cut -d":" -f2 | sort
 
-# Run full scan of all objects in the baseDn; the ldapsearch is run as a background process
+# Run full scan of all objects in the baseDn
+# ldapsearch is run as a background process
 # one background process per DS instance is created
   if [[ ${FULLCHECK} == "true" ]]
     then
@@ -254,7 +256,11 @@ echo "-------- $(date) --------"
 if [[ ($totaldns < 1) ]]
   then
   echo ""
-  echo "-->> There are NO objects to check <<--"
+  echo "    ----vvvvvvvvvvvvvvvvvvv----"
+  echo "    -->>     NO objects    <<--"
+  echo "    -->> meet the criteria <<--"
+  echo "    ----^^^^^^^^^^^^^^^^^^^----"
+  echo ""
 else
   if  [[ ${FULLCHECK} == "true" ]]
     then
