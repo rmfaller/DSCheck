@@ -273,7 +273,7 @@ else
               --verbose \
               --fulldisplay \
               --repeat 16 \
-              --sleep 4 \
+              --sleep 8 \
               --instances ${instances} \
               ${TMPFILES}/dns.txt 2> ${TMPFILES}/objects-${DSCURRENTTIME}.err
   else
@@ -285,7 +285,7 @@ else
               --verbose \
               --fulldisplay \
                --repeat 16 \
-               --sleep 4 \
+               --sleep 8 \
                --instances ${instances} \
                ${TMPFILES}/dns.txt 2> ${TMPFILES}/objects-${DSCURRENTTIME}.err
   fi
